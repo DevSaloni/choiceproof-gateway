@@ -1,0 +1,99 @@
+# ==============================
+# Dependencies
+# ==============================
+node_modules/
+client/node_modules/
+server/node_modules/
+*/node_modules/
+
+# ==============================
+# Environment / Secrets (DO NOT COMMIT)
+# ==============================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+client/.env
+client/.env.local
+server/.env
+server/.env.local
+
+# ==============================
+# Build output
+# ==============================
+dist/
+build/
+client/dist/
+server/dist/
+*.tsbuildinfo
+.cache/
+
+# ==============================
+# Package manager lock files (choose one)
+# ==============================
+# Uncomment for pnpm:
+# pnpm-lock.yaml
+# Uncomment for yarn:
+# yarn.lock
+
+# ==============================
+# Logs
+# ==============================
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log
+
+# ==============================
+# Prisma
+# ==============================
+generated/
+prisma/migrations/
+
+# ==============================
+# IDE / Editor
+# ==============================
+.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+.idea/*
+*.swp
+*.swo
+*~
+.DS_Store
+.VS/
+
+# ==============================
+# OS Files
+# ==============================
+.DS_Store
+Thumbs.db
+.directory
+
+# ==============================
+# Temporary / Development files
+# ==============================
+*.tmp
+*.temp
+*.bak
+.turbo/
+
+# ==============================
+# Test Coverage
+# ==============================
+coverage/
+.nyc_output/
+
+# ==============================
+# Vite
+# ==============================
+client/.vite/
+
+# ==============================
+# Node/NPM
+# ==============================
+package-lock.json
