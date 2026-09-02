@@ -17,27 +17,37 @@ import {
 interface IntentLockColumnProps {
   intentRules: IntentLockRules;
   onUpdateRules: (rules: IntentLockRules) => void;
-  onConfirmLock: () => void;
+  onConfirmLock: () => void | Promise<void>;
+  onAnalyzePrompt?: (prompt: string) => Promise<void>;
+  isBusy?: boolean;
 }
 
 export const IntentLockColumn: React.FC<IntentLockColumnProps> = ({
   intentRules,
   onUpdateRules,
   onConfirmLock,
+  onAnalyzePrompt,
+  isBusy = false,
 }) => {
   const [inputText, setInputText] = useState(DEFAULT_USER_REQUEST);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showUnresolvedSample, setShowUnresolvedSample] = useState(false);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     setIsAnalyzing(true);
-    setTimeout(() => {
+    try {
+      if (onAnalyzePrompt) {
+        await onAnalyzePrompt(inputText);
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        onUpdateRules({
+          ...intentRules,
+          status: 'parsed',
+        });
+      }
+    } finally {
       setIsAnalyzing(false);
-      onUpdateRules({
-        ...intentRules,
-        status: 'parsed',
-      });
-    }, 600);
+    }
   };
 
   const handleUseExample = () => {
@@ -98,18 +108,24 @@ export const IntentLockColumn: React.FC<IntentLockColumnProps> = ({
       )}
 
       {/* Loading State */}
-      {isAnalyzing && (
+      {(isAnalyzing || intentRules.status === 'analyzing' || (isBusy && intentRules.status === 'parsed')) && (
         <div className="analyzing-state">
           <div className="spinner-indigo" />
           <p className="analyzing-text">
-            Turning your request into clear shopping rules…
+            {intentRules.status === 'parsed'
+              ? 'Confirming rules and scanning the catalog…'
+              : 'Turning your request into clear shopping rules…'}
           </p>
-          <span className="analyzing-sub">Extracting category, budget, delivery & preferences</span>
+          <span className="analyzing-sub">
+            {intentRules.status === 'parsed'
+              ? 'Hard filters → eligible offers → AI selection → ChoiceProof'
+              : 'Extracting category, budget, delivery & preferences'}
+          </span>
         </div>
       )}
 
       {/* Parsed Preview State */}
-      {!isAnalyzing && intentRules.status === 'parsed' && (
+      {!isAnalyzing && !isBusy && intentRules.status === 'parsed' && (
         <div className="parsed-intent-container">
           <div className="parsed-header">
             <span className="parsed-title">Intent Lock Preview</span>

@@ -4,11 +4,17 @@ import { ShieldCheck, RefreshCw } from './Icons';
 interface DashboardHeaderProps {
   onNewSession: () => void;
   onGoToLanding: () => void;
+  aiMode?: string;
+  paymentMode?: string;
+  apiConnected?: boolean;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onNewSession,
   onGoToLanding,
+  aiMode = 'fixture',
+  paymentMode = 'mock',
+  apiConnected = false,
 }) => {
   return (
     <header className="dashboard-header">
@@ -28,14 +34,19 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
         {/* Right badges & controls */}
         <div className="header-right">
-          <div className="header-badge badge-neutral" title="Operating with pre-verified mock catalog fixtures">
-            <span className="dot-indicator dot-blue"></span>
-            AI: Fixture Mode
+          <div className={`header-badge ${apiConnected ? 'badge-neutral' : 'badge-offline'}`} title={apiConnected ? 'Connected to ChoiceProof API' : 'API unreachable'}>
+            <span className={`dot-indicator ${apiConnected ? 'dot-emerald' : 'dot-red'}`}></span>
+            {apiConnected ? 'API connected' : 'API offline'}
           </div>
 
-          <div className="header-badge badge-razorpay" title="Simulated Razorpay Sandbox Payment Verification">
+          <div className="header-badge badge-neutral" title="AI provider mode from the server">
+            <span className="dot-indicator dot-blue"></span>
+            AI: {aiMode === 'gemini' ? 'Gemini' : 'Fixture'}
+          </div>
+
+          <div className="header-badge badge-razorpay" title="Payment provider mode from the server">
             <span className="dot-indicator dot-indigo"></span>
-            Payment: Razorpay Test Mode
+            Payment: {paymentMode === 'razorpay' ? 'Razorpay Test' : 'Mock'}
           </div>
 
           <div className="user-chip">

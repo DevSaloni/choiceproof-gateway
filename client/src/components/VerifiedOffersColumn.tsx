@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { ScenarioId } from '../types/choiceproof';
+import type { ExcludedProduct, ProductOffer, ScenarioId } from '../types/choiceproof';
 import {
   CATALOG_SCAN_SUMMARY,
   EXCLUDED_PRODUCTS,
@@ -23,6 +23,9 @@ interface VerifiedOffersColumnProps {
   currentScenario: ScenarioId;
   selectedProductId: string;
   isIntentConfirmed: boolean;
+  eligibleProducts?: ProductOffer[];
+  excludedProducts?: ExcludedProduct[];
+  scannedCount?: number;
 }
 
 type CatalogTab = 'eligible' | 'excluded';
@@ -31,8 +34,14 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
   currentScenario,
   selectedProductId,
   isIntentConfirmed,
+  eligibleProducts = MOCK_PRODUCTS,
+  excludedProducts = EXCLUDED_PRODUCTS,
+  scannedCount,
 }) => {
   const [activeTab, setActiveTab] = useState<CatalogTab>('eligible');
+  const eligibleCount = eligibleProducts.length;
+  const excludedCount = excludedProducts.length;
+  const scanned = scannedCount || eligibleCount + excludedCount || CATALOG_SCAN_SUMMARY.scanned;
 
   useEffect(() => {
     setActiveTab('eligible');
@@ -57,15 +66,15 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
         </div>
         <div className="catalog-analysis-stats">
           <div className="catalog-stat">
-            <span className="catalog-stat-value">{CATALOG_SCAN_SUMMARY.scanned}</span>
+            <span className="catalog-stat-value">{scanned}</span>
             <span className="catalog-stat-label">products scanned</span>
           </div>
           <div className="catalog-stat catalog-stat-eligible">
-            <span className="catalog-stat-value">{CATALOG_SCAN_SUMMARY.eligible}</span>
+            <span className="catalog-stat-value">{eligibleCount}</span>
             <span className="catalog-stat-label">products eligible</span>
           </div>
           <div className="catalog-stat catalog-stat-excluded">
-            <span className="catalog-stat-value">{CATALOG_SCAN_SUMMARY.excluded}</span>
+            <span className="catalog-stat-value">{excludedCount}</span>
             <span className="catalog-stat-label">products excluded</span>
           </div>
         </div>
@@ -87,7 +96,7 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
         <div className="pipeline-node">
           <Package size={14} />
           <span className="pipeline-node-title">Full Catalog</span>
-          <span className="pipeline-node-sub">10 products</span>
+          <span className="pipeline-node-sub">{scanned} products</span>
         </div>
         <div className="pipeline-arrow">
           <ArrowDown size={14} />
@@ -103,7 +112,7 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
         <div className="pipeline-node pipeline-node-eligible">
           <ListFilter size={14} />
           <span className="pipeline-node-title">Eligible Offers</span>
-          <span className="pipeline-node-sub">3 products</span>
+          <span className="pipeline-node-sub">{eligibleCount} products</span>
         </div>
         <div className="pipeline-arrow">
           <ArrowDown size={14} />
@@ -130,7 +139,7 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
           className={`catalog-tab ${activeTab === 'eligible' ? 'catalog-tab-active' : ''}`}
           onClick={() => setActiveTab('eligible')}
         >
-          Eligible Products (3)
+          Eligible Products ({eligibleCount})
         </button>
         <button
           type="button"
@@ -139,16 +148,16 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
           className={`catalog-tab ${activeTab === 'excluded' ? 'catalog-tab-active' : ''}`}
           onClick={() => setActiveTab('excluded')}
         >
-          Excluded Products (7)
+          Excluded Products ({excludedCount})
         </button>
       </div>
 
       {activeTab === 'eligible' && (
         <div className="catalog-tab-panel">
           <h4 className="catalog-panel-title">Eligible Offers</h4>
-          <p className="catalog-panel-sub">3 products match your confirmed hard requirements.</p>
+          <p className="catalog-panel-sub">{eligibleCount} products match your confirmed hard requirements.</p>
           <div className="products-list">
-            {MOCK_PRODUCTS.map((prod) => (
+            {eligibleProducts.map((prod) => (
               <ProductOfferCard
                 key={`${prod.id}-${currentScenario}-${selectedProductId}`}
                 product={prod}
@@ -166,9 +175,9 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
       {activeTab === 'excluded' && (
         <div className="catalog-tab-panel">
           <h4 className="catalog-panel-title">Excluded Products</h4>
-          <p className="catalog-panel-sub">7 products did not meet confirmed hard requirements.</p>
+          <p className="catalog-panel-sub">{excludedCount} products did not meet confirmed hard requirements.</p>
           <div className="excluded-products-list">
-            {EXCLUDED_PRODUCTS.map((prod) => (
+            {excludedProducts.map((prod) => (
               <div key={prod.id} className="excluded-product-card">
                 <div className="excluded-product-top">
                   <div>

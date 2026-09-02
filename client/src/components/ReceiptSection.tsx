@@ -24,6 +24,11 @@ interface ReceiptSectionProps {
   selectedProductId: string;
   isScenario3Mutated: boolean;
   paymentComplete: boolean;
+  receiptHash?: string;
+  receiptSignature?: string;
+  permitId?: string;
+  orderId?: string;
+  auditEvents?: { at: string; event: string; actor: string }[];
 }
 
 export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
@@ -32,6 +37,11 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
   selectedProductId,
   isScenario3Mutated,
   paymentComplete,
+  receiptHash,
+  receiptSignature,
+  permitId,
+  orderId,
+  auditEvents,
 }) => {
   // Only render if payment is complete OR if scenario 3 is in blocked state
   const isBlockedReceipt = currentScenario === 'scenario_3' && isScenario3Mutated;
@@ -69,14 +79,14 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
       stabilityVerified: !isBlockedReceipt && decisionStatus !== 'APPROVED_WITH_USER_OVERRIDE',
     },
     paymentGuardian: {
-      permitId: isBlockedReceipt ? 'NONE (DENIED)' : 'cp_7f4a91b22e11',
+      permitId: isBlockedReceipt ? 'NONE (DENIED)' : permitId || 'cp_7f4a91b22e11',
       singleUse: true,
       cartLocked: true,
       expiry: '5 minutes',
     },
     razorpay: {
       orderCreated: !isBlockedReceipt,
-      orderId: isBlockedReceipt ? 'NONE' : 'order_Q3xDemo123',
+      orderId: isBlockedReceipt ? 'NONE' : orderId || 'order_Q3xDemo123',
       paymentId: isBlockedReceipt ? 'NONE' : 'pay_Q3xDemo456',
       paymentSignature: isBlockedReceipt ? 'N/A' : 'Verified (HMAC-SHA256)',
       mode: 'Test Mode',
@@ -88,10 +98,10 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
         : selectedProduct.id === 'prod_nike_runner'
         ? NIKE_CART_HASH
         : PREMIUM_X_CART_HASH,
-      receiptHash: isBlockedReceipt
+      receiptHash: receiptHash || (isBlockedReceipt
         ? 'sha256:bb9104fa281c900e'
-        : 'sha256:7c91e8f23901b22a',
-      receiptSignature: 'Valid (ChoiceProof Ed25519 Authority Key)',
+        : 'sha256:7c91e8f23901b22a'),
+      receiptSignature: receiptSignature || 'Valid (HMAC-SHA256)',
     },
   };
 
@@ -265,7 +275,7 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
                 <div className="r-sec-row">
                   <span className="r-k">Permit:</span>
                   <span className="r-v font-mono text-xs text-indigo-700">
-                    {isBlockedReceipt ? 'NONE (DENIED)' : 'cp_7f4...a91'}
+                    {isBlockedReceipt ? 'NONE (DENIED)' : (permitId ? `${permitId.slice(0, 14)}…` : 'cp_7f4...a91')}
                   </span>
                 </div>
                 <div className="r-sec-row">
@@ -305,7 +315,7 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
                   <div>
                     <div className="r-sec-row">
                       <span className="r-k">Order ID:</span>
-                      <span className="r-v font-mono text-xs">order_Q3xDemo123</span>
+                      <span className="r-v font-mono text-xs">{receiptData.razorpay.orderId}</span>
                     </div>
                     <div className="r-sec-row">
                       <span className="r-k">Payment ID:</span>
@@ -345,7 +355,7 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
                 </div>
                 <div className="r-sec-row">
                   <span className="r-k text-slate-500">Receipt hash:</span>
-                  <span className="r-v text-slate-700">sha256:7c91...e8f</span>
+                  <span className="r-v text-slate-700">{receiptData.integrity.receiptHash.slice(0, 22)}…</span>
                 </div>
                 <div className="r-sec-row">
                   <span className="r-k text-slate-500">Receipt signature:</span>
@@ -364,6 +374,20 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
           </div>
 
           <div className="timeline-items-list">
+            {auditEvents && auditEvents.length > 0 ? (
+              auditEvents.map((event) => (
+                <div className="timeline-item" key={`${event.at}-${event.event}`}>
+                  <span className="t-time">
+                    {new Date(event.at).toLocaleTimeString('en-IN', { hour12: false })}
+                  </span>
+                  <span className={`t-dot ${/BLOCK|MUTATION/.test(event.event) ? 'dot-red' : ''}`}></span>
+                  <span className="t-desc">
+                    {event.actor}: {event.event.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <>
             <div className="timeline-item">
               <span className="t-time">11:00:01</span>
               <span className="t-dot"></span>
@@ -436,6 +460,8 @@ export const ReceiptSection: React.FC<ReceiptSectionProps> = ({
                   <span className="t-dot dot-emerald"></span>
                   <span className="t-desc">Receipt generated</span>
                 </div>
+              </>
+            )}
               </>
             )}
           </div>

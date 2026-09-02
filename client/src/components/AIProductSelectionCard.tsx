@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { ScenarioId } from '../types/choiceproof';
+import type { ProductOffer, ScenarioId } from '../types/choiceproof';
 import { AI_SELECTION_BY_SCENARIO, MOCK_PRODUCTS } from '../data/mockData';
 import {
   ChevronDown,
@@ -13,11 +13,17 @@ import {
 interface AIProductSelectionCardProps {
   currentScenario: ScenarioId;
   isIntentConfirmed: boolean;
+  eligibleCount?: number;
+  selectedProductOverride?: ProductOffer;
+  reasonOverride?: string;
 }
 
 export const AIProductSelectionCard: React.FC<AIProductSelectionCardProps> = ({
   currentScenario,
   isIntentConfirmed,
+  eligibleCount = 3,
+  selectedProductOverride,
+  reasonOverride,
 }) => {
   const [isComparing, setIsComparing] = useState(true);
   const [showComparisonBasis, setShowComparisonBasis] = useState(false);
@@ -33,8 +39,12 @@ export const AIProductSelectionCard: React.FC<AIProductSelectionCardProps> = ({
   }, [currentScenario, isIntentConfirmed]);
 
   const selection = AI_SELECTION_BY_SCENARIO[currentScenario];
-  const product = MOCK_PRODUCTS.find((item) => item.id === selection.productId) || MOCK_PRODUCTS[0];
+  const product =
+    selectedProductOverride ||
+    MOCK_PRODUCTS.find((item) => item.id === selection.productId) ||
+    MOCK_PRODUCTS[0];
   const brandLabel = product.brand === 'Other' ? 'Other brand' : product.brand;
+  const reason = reasonOverride || selection.reason;
 
   return (
     <div className={`column-card step-card ${!isIntentConfirmed ? 'opacity-60 pointer-events-none' : ''}`}>
@@ -42,7 +52,7 @@ export const AIProductSelectionCard: React.FC<AIProductSelectionCardProps> = ({
         <div className="step-badge">Step 3</div>
         <h3 className="step-title">AI Product Selection</h3>
       </div>
-      <p className="step-subtitle">Selected from 3 eligible offers</p>
+      <p className="step-subtitle">Selected from {eligibleCount} eligible offers</p>
 
       {isComparing ? (
         <div className="analyzing-state selection-loading-state">
@@ -78,7 +88,7 @@ export const AIProductSelectionCard: React.FC<AIProductSelectionCardProps> = ({
                 <span>{selection.boundCartNote}</span>
               </div>
             ) : (
-              <p className="ai-selected-reason">{selection.reason}</p>
+              <p className="ai-selected-reason">{reason}</p>
             )}
 
             {selection.verifyWarning && (

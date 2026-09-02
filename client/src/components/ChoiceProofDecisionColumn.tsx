@@ -31,11 +31,15 @@ interface ChoiceProofDecisionColumnProps {
   onSetDecisionStatus: (status: ChoiceProofStatus) => void;
   onSelectProduct: (productId: string) => void;
   isPermitIssued: boolean;
-  onIssuePermit: () => void;
+  onIssuePermit: () => void | Promise<void>;
   onOpenRazorpayModal: (amount: number, product: ProductOffer) => void;
-  onTriggerScenario3Mutation: () => void;
+  onTriggerScenario3Mutation: () => void | Promise<void>;
   isScenario3Mutated: boolean;
   onResetSession: () => void;
+  onChooseRecommended?: () => void | Promise<void>;
+  onConfirmOverride?: () => void | Promise<void>;
+  permitId?: string;
+  permitExpiresAt?: string;
 }
 
 export const ChoiceProofDecisionColumn: React.FC<ChoiceProofDecisionColumnProps> = ({
@@ -51,19 +55,28 @@ export const ChoiceProofDecisionColumn: React.FC<ChoiceProofDecisionColumnProps>
   onTriggerScenario3Mutation,
   isScenario3Mutated,
   onResetSession,
+  onChooseRecommended,
+  onConfirmOverride,
+  permitId,
+  permitExpiresAt,
 }) => {
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [showTechDetails, setShowTechDetails] = useState(false);
-  const [countdownSeconds, setCountdownSeconds] = useState(298); // 04:58
+  const [countdownSeconds, setCountdownSeconds] = useState(298);
 
-  // Live countdown for payment permit
   useEffect(() => {
     if (!isPermitIssued) return;
-    const interval = setInterval(() => {
+    const tick = () => {
+      if (permitExpiresAt) {
+        setCountdownSeconds(Math.max(0, Math.floor((new Date(permitExpiresAt).getTime() - Date.now()) / 1000)));
+        return;
+      }
       setCountdownSeconds((prev) => (prev > 1 ? prev - 1 : 0));
-    }, 1000);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [isPermitIssued]);
+  }, [isPermitIssued, permitExpiresAt]);
 
   const formatCountdown = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -76,13 +89,21 @@ export const ChoiceProofDecisionColumn: React.FC<ChoiceProofDecisionColumnProps>
   const selectedProduct =
     MOCK_PRODUCTS.find((p) => p.id === selectedProductId) || MOCK_PRODUCTS[0];
 
-  const handleChooseRecommended = () => {
+  const handleChooseRecommended = async () => {
+    if (onChooseRecommended) {
+      await onChooseRecommended();
+      return;
+    }
     onSelectProduct('prod_nike_runner');
     onSetDecisionStatus('APPROVED');
   };
 
-  const handleConfirmOverride = () => {
+  const handleConfirmOverride = async () => {
     setShowOverrideModal(false);
+    if (onConfirmOverride) {
+      await onConfirmOverride();
+      return;
+    }
     onSetDecisionStatus('APPROVED_WITH_USER_OVERRIDE');
   };
 
@@ -529,7 +550,7 @@ export const ChoiceProofDecisionColumn: React.FC<ChoiceProofDecisionColumnProps>
                 <div className="tech-row">
                   <span className="text-slate-500">Permit ID:</span>
                   <Tooltip content="Unique cryptographically signed execution authorization nonce">
-                    <span className="text-indigo-700">cp_7f4a91b22e11...</span>
+                    <span className="text-indigo-700">{permitId || 'cp_7f4a91b22e11...'}</span>
                   </Tooltip>
                 </div>
                 <div className="tech-row">

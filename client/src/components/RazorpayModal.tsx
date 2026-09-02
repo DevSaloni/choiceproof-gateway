@@ -11,7 +11,9 @@ interface RazorpayModalProps {
   onClose: () => void;
   product: ProductOffer;
   amount: number;
-  onPaymentSuccess: () => void;
+  onPaymentSuccess: () => void | Promise<void>;
+  orderId?: string;
+  permitLabel?: string;
 }
 
 export const RazorpayModal: React.FC<RazorpayModalProps> = ({
@@ -20,6 +22,8 @@ export const RazorpayModal: React.FC<RazorpayModalProps> = ({
   product,
   amount,
   onPaymentSuccess,
+  orderId = 'order_Q3xDemo123',
+  permitLabel = 'cp_7f4...a91',
 }) => {
   const [activeTab, setActiveTab] = useState<'upi' | 'card' | 'netbanking'>('upi');
   const [upiId, setUpiId] = useState('demo.shopper@okhdfcbank');
@@ -27,13 +31,14 @@ export const RazorpayModal: React.FC<RazorpayModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      onPaymentSuccess();
+    try {
+      await onPaymentSuccess();
       onClose();
-    }, 1200);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -64,7 +69,7 @@ export const RazorpayModal: React.FC<RazorpayModalProps> = ({
         <div className="razorpay-order-banner">
           <div className="flex justify-between items-center mb-1">
             <span className="razorpay-merchant-name">{product.merchant}</span>
-            <span className="razorpay-order-id font-mono text-xs">order_Q3xDemo123</span>
+            <span className="razorpay-order-id font-mono text-xs">{orderId}</span>
           </div>
           <div className="flex justify-between items-baseline">
             <span className="razorpay-item-name">{product.name} (UK 8)</span>
@@ -77,7 +82,7 @@ export const RazorpayModal: React.FC<RazorpayModalProps> = ({
         {/* ChoiceProof Signed Guard Banner */}
         <div className="razorpay-guard-badge">
           <ShieldCheck size={14} className="text-indigo-600" />
-          <span>Bound to ChoiceProof Permit cp_7f4...a91 (Cart Locked)</span>
+          <span>Bound to ChoiceProof Permit {permitLabel} (Cart Locked)</span>
         </div>
 
         {/* Processing State */}

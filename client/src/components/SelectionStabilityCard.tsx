@@ -5,12 +5,20 @@ import { ShieldCheck, ArrowRight, Info } from './Icons';
 
 interface SelectionStabilityCardProps {
   currentScenario: ScenarioId;
+  normalProductName?: string;
+  cleanProductName?: string;
+  stabilityStatus?: 'STABLE' | 'UNSTABLE';
 }
 
 export const SelectionStabilityCard: React.FC<SelectionStabilityCardProps> = ({
   currentScenario,
+  normalProductName,
+  cleanProductName,
+  stabilityStatus,
 }) => {
-  const isUnstable = currentScenario === 'scenario_2';
+  const isUnstable = stabilityStatus ? stabilityStatus === 'UNSTABLE' : currentScenario === 'scenario_2';
+  const normalName = normalProductName || (isUnstable ? 'Premium X' : 'Nike Runner');
+  const cleanName = cleanProductName || 'Nike Runner';
 
   return (
     <div className="stability-check-card">
@@ -28,7 +36,7 @@ export const SelectionStabilityCard: React.FC<SelectionStabilityCardProps> = ({
         <div className="stability-sub-card">
           <span className="stability-col-label">Normal AI Selection</span>
           <div className="stability-product-name">
-            {isUnstable ? 'Premium X' : 'Nike Runner'}
+            {normalName}
           </div>
           <span className="stability-col-sub">
             Full catalog including merchant descriptions
@@ -41,7 +49,7 @@ export const SelectionStabilityCard: React.FC<SelectionStabilityCardProps> = ({
 
         <div className="stability-sub-card">
           <span className="stability-col-label">Clean Selection</span>
-          <div className="stability-product-name">Nike Runner</div>
+          <div className="stability-product-name">{cleanName}</div>
           <span className="stability-col-sub">Verified product facts only</span>
         </div>
       </div>
