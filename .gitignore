@@ -30,12 +30,10 @@ server/dist/
 .cache/
 
 # ==============================
-# Package manager lock files (choose one)
+# Alternative package-manager lock files
 # ==============================
-# Uncomment for pnpm:
-# pnpm-lock.yaml
-# Uncomment for yarn:
-# yarn.lock
+pnpm-lock.yaml
+yarn.lock
 
 # ==============================
 # Logs
@@ -51,7 +49,6 @@ lerna-debug.log*
 # Prisma
 # ==============================
 generated/
-prisma/migrations/
 
 # ==============================
 # IDE / Editor
@@ -96,4 +93,3 @@ client/.vite/
 # ==============================
 # Node/NPM
 # ==============================
-package-lock.json

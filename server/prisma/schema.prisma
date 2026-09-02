@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SessionStatus {
+  CREATED
+  INTENT_PARSED
+  INTENT_CONFIRMED
+  CATALOG_READY
+  PRODUCT_SELECTED
+  REVIEW_PENDING
+  APPROVED
+  PERMIT_ISSUED
+  ORDER_CREATED
+  PAYMENT_VERIFIED
+  BLOCKED
+  CANCELLED
+}
+enum IntentStatus {
+  PARSED
+  CONFIRMED
+  SUPERSEDED
+}
+enum EvaluationDecision {
+  APPROVE
+  REVIEW
+  BLOCK
+  APPROVE_WITH_OVERRIDE
+}
+enum PermitStatus {
+  ISSUED
+  RESERVED
+  USED
+  EXPIRED
+  BLOCKED
+  REVOKED
+}
+enum PaymentStatus {
+  CREATING
+  ORDER_CREATED
+  ORDER_FAILED
+  AUTHENTICATED
+  CAPTURED
+  FAILED
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  displayName String
+  passwordHash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions ShoppingSession[]
+}
+model ShoppingSession {
+  id String @id @default(cuid())
+  userId String
+  scenarioId String
+  status SessionStatus @default(CREATED)
+  aiMode String @default("fixture")
+  paymentMode String @default("mock")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields:[userId],references:[id])
+  intents UserIntent[]
+  offers OfferSet[]
+  decisions AgentDecision[]
+  evaluations ChoiceProofEvaluation[]
+  permits ExecutionPermit[]
+  payments Payment[]
+  receipts Receipt[]
+  audits AuditEvent[]
+}
+model UserIntent {
+  id String @id @default(cuid())
+  sessionId String
+  version Int
+  rawPrompt String
+  rulesJson Json
+  status IntentStatus @default(PARSED)
+  intentHash String
+  confirmedAt DateTime?
+  createdAt DateTime @default(now())
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  @@unique([sessionId,version])
+}
+model Product {
+  id String @id
+  catalogId String
+  catalogVersion String
+  merchant String
+  sku String
+  dataJson Json
+  active Boolean @default(true)
+  @@unique([catalogVersion,sku])
+}
+model OfferSet {
+  id String @id @default(cuid())
+  sessionId String
+  catalogVersion String
+  offerSetHash String
+  offersJson Json
+  createdAt DateTime @default(now())
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+}
+model AgentDecision {
+  id String @id
+  sessionId String
+  mode String
+  selectedProductId String
+  decisionJson Json
+  createdAt DateTime @default(now())
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+}
+model ChoiceProofEvaluation {
+  id String @id
+  sessionId String
+  selectedProductId String
+  decision EvaluationDecision
+  evaluationJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  permits ExecutionPermit[]
+}
+model ExecutionPermit {
+  id String @id
+  sessionId String
+  evaluationId String
+  cartJson Json
+  cartHash String
+  signature String
+  nonce String
+  expiresAt DateTime
+  status PermitStatus @default(ISSUED)
+  reservedAt DateTime?
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  evaluation ChoiceProofEvaluation @relation(fields:[evaluationId],references:[id])
+  payments Payment[]
+}
+model Payment {
+  id String @id
+  sessionId String
+  permitId String
+  idempotencyKey String @unique
+  provider String
+  providerOrderId String? @unique
+  providerPaymentId String? @unique
+  providerSignature String?
+  amountPaise Int
+  currency String
+  status PaymentStatus @default(CREATING)
+  paymentSignatureVerified Boolean @default(false)
+  webhookVerified Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  permit ExecutionPermit @relation(fields:[permitId],references:[id])
+}
+model Receipt {
+  id String @id
+  sessionId String
+  kind String
+  receiptJson Json
+  receiptHash String
+  receiptSignature String
+  createdAt DateTime @default(now())
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+}
+model AuditEvent {
+  id String @id @default(cuid())
+  sessionId String
+  actor String
+  eventType String
+  metadataJson Json?
+  createdAt DateTime @default(now())
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+}
+model WebhookEvent {
+  id String @id @default(cuid())
+  provider String
+  providerEventId String @unique
+  eventType String
+  payloadHash String
+  processed Boolean @default(false)
+  processedAt DateTime?
+  createdAt DateTime @default(now())
+}
