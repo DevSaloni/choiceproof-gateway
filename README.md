@@ -14,6 +14,8 @@ The prototype demonstrates three outcomes:
 - **REVIEW:** The selection is technically valid but unstable, influenced by instruction-like content, or dominated by another observed offer.
 - **BLOCK:** A hard requirement fails or the final payment cart differs from the permitted cart.
 
+It also provides a guided conversation API and a **Safe Replacement Agent** that finds up to three hard-rule-compliant alternatives. Replacements never purchase automatically; the buyer must confirm one explicitly.
+
 ## Architecture
 
 ```text
@@ -22,6 +24,8 @@ User request
 Intent Lock (parse + human confirmation)
     ↓
 Verified Offer Set
+    ↓
+Bounded AI tools: read intent + search + compare + submit
     ↓
 AI selection: NORMAL + CLEAN
     ↓
@@ -53,6 +57,8 @@ The current backend work is isolated on `feat/choiceproof-backend`. No client fi
 ## Backend capabilities
 
 - Seeded demo authentication with JWT-protected routes.
+- Persistent guided buyer-chat messages and intent drafts.
+- Bounded shopping-agent runs with stored tool-call traces.
 - Fixture and Gemini AI provider modes.
 - Intent parsing and explicit confirmation.
 - Catalog filtering with exclusion reason codes.
@@ -61,13 +67,16 @@ The current backend work is isolated on `feat/choiceproof-backend`. No client fi
 - User-relevant Pareto/better-offer detection.
 - Merchant instruction-like content scanning.
 - Explicit review override or alternative selection.
+- Deterministic safe-replacement discovery and confirmation.
 - HMAC-SHA256 exact-cart payment permits.
 - Permit expiry, reservation, cart-mutation detection, and idempotency controls.
 - Mock and Razorpay Test Mode payment providers.
 - Payment callback signature verification.
 - Raw-body Razorpay webhook signature verification.
 - Signed, tamper-evident audit receipts.
-- Neon PostgreSQL schema, migration runner, seed data, and persistence records.
+- Receipt verification endpoint.
+- PostgreSQL-authoritative session recovery after process restarts.
+- Neon PostgreSQL schema, migration runner, seed data, and normalized audit records.
 
 ## Local setup
 
@@ -102,10 +111,10 @@ For live providers, set `AI_MODE=gemini` with `GEMINI_API_KEY`, or `PAYMENT_MODE
 
 1. `POST /api/v1/auth/demo-login`
 2. Create a shopping session.
-3. Parse and confirm requirements.
-4. Generate the frozen offer set.
-5. Run NORMAL and CLEAN product selection.
-6. Run deterministic ChoiceProof evaluation.
+3. Send guided buyer messages and confirm requirements.
+4. Run the bounded shopping agent.
+5. Freeze the offer set and produce NORMAL/CLEAN selections.
+6. Run deterministic ChoiceProof evaluation and generate safe replacements when required.
 7. Resolve REVIEW if necessary.
 8. Issue an exact-cart permit.
 9. Submit the candidate cart to Payment Guardian.
@@ -122,7 +131,7 @@ npm run build
 npm test
 ```
 
-The automated suite covers the three headline demo scenarios and key deterministic ChoiceProof rules. Real Gemini and Razorpay smoke tests require their respective credentials.
+The automated suite covers the three headline demos, guided chat, tool traces, safe replacements, receipts, idempotency, and a 40-case deterministic evaluation. Real Gemini and Razorpay smoke tests require their respective credentials.
 
 ## Security boundaries
 
@@ -134,6 +143,6 @@ The automated suite covers the three headline demo scenarios and key determinist
 - Receipts are signed and tamper-evident; they are not claimed to be immutable.
 - This prototype reduces agentic-commerce decision risk; it does not claim to detect every prompt injection or prove a globally optimal product choice.
 
-## Prototype limitation
+## Current product boundary
 
-Neon stores the schema, catalog, and recorded control-plane transitions. Active sessions are currently retained in-process during a demo run and are not yet hydrated back into memory after a server restart. Complete restart recovery and multi-instance transactional operation remain production-hardening work.
+The judged backend uses one seeded running-shoe catalog and one demo user. It does not scrape external marketplaces, provide merchant onboarding, prove a globally optimal product, or give the AI direct payment authority.
