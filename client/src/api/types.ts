@@ -70,6 +70,26 @@ export interface ApiAgentDecision {
   createdAt: string;
 }
 
+export interface ApiChatMessage {
+  id: string;
+  role: 'USER' | 'ASSISTANT';
+  kind: string;
+  text: string;
+  structuredData?: Record<string, unknown>;
+  createdAt?: string;
+}
+
+export interface ApiIntentDraft {
+  rawPrompt?: string;
+  category?: string;
+  size?: string;
+  maxAmountPaise?: number;
+  maxDeliveryDays?: number;
+  subscriptionAllowed?: boolean;
+  brandPreference?: string;
+  missingFields?: string[];
+}
+
 export interface ApiEvaluation {
   id: string;
   sessionId: string;
@@ -91,6 +111,7 @@ export interface ApiEvaluation {
   };
   createdAt: string;
   override?: Record<string, unknown>;
+  replacements?: { productId: string; reasonCodes?: string[]; differencesFromOriginal?: Record<string, number> }[];
 }
 
 export interface ApiPermit {
@@ -131,7 +152,7 @@ export interface ApiAuditEvent {
 export interface ApiSession {
   id: string;
   userId: string;
-  scenarioId: ScenarioId;
+  scenarioId: ScenarioId | null;
   status: string;
   intent?: ApiIntent;
   offerSet?: ApiProduct[];
@@ -141,6 +162,18 @@ export interface ApiSession {
   permit?: ApiPermit;
   payments: ApiPayment[];
   audit: ApiAuditEvent[];
+  messages?: ApiChatMessage[];
+  intentDraft?: ApiIntentDraft;
+  offerSetState?: { hash: string; eligible: ApiProduct[]; excluded: { product: ApiProduct; reason: string }[] };
+  agentRuns?: { id: string; toolCalls: { id: string; toolName: string; createdAt: string }[] }[];
+}
+
+export interface ApiConversationReply {
+  userMessage: ApiChatMessage;
+  assistantMessage: ApiChatMessage;
+  intentDraft?: ApiIntentDraft;
+  missingFields?: string[];
+  actionRequired?: string;
 }
 
 export interface ApiCatalogResponse {

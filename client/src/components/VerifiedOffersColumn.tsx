@@ -44,6 +44,8 @@ export const VerifiedOffersColumn: React.FC<VerifiedOffersColumnProps> = ({
   const scanned = scannedCount || eligibleCount + excludedCount || CATALOG_SCAN_SUMMARY.scanned;
 
   useEffect(() => {
+    // Switching a legacy Proof Lab scenario returns this view to the eligible offer tab.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab('eligible');
   }, [currentScenario]);
 

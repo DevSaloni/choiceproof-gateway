@@ -30,9 +30,11 @@ export const AIProductSelectionCard: React.FC<AIProductSelectionCardProps> = ({
 
   useEffect(() => {
     if (!isIntentConfirmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsComparing(false);
       return;
     }
+    // Legacy lab animation state is intentionally derived when a scenario changes.
     setIsComparing(true);
     const timer = window.setTimeout(() => setIsComparing(false), 700);
     return () => window.clearTimeout(timer);

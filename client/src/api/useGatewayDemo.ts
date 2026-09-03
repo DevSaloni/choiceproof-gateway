@@ -65,7 +65,8 @@ export function useGatewayDemo() {
   const selectedProductId =
     evaluation?.selectedProductId ||
     normal?.productId ||
-    (currentScenario === 'scenario_2' ? 'prod_premium_x' : 'prod_nike_runner');
+    eligible[0]?.id ||
+    MOCK_PRODUCTS[0]?.id;
 
   const selectedProduct =
     eligible.find((p) => p.id === selectedProductId) || MOCK_PRODUCTS.find((p) => p.id === selectedProductId) || MOCK_PRODUCTS[0];
@@ -118,6 +119,8 @@ export function useGatewayDemo() {
   }, [currentScenario]);
 
   useEffect(() => {
+    // This legacy Proof Lab deliberately starts its API demo once on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -218,8 +221,11 @@ export function useGatewayDemo() {
 
   const handleChooseAlternative = async () => {
     if (!evaluation) return;
+    const replacements = await gateway.fetchReplacements(evaluation.id);
+    const replacementId = replacements.replacements?.[0]?.productId || evaluation.dominance?.[0]?.productId;
+    if (!replacementId) throw new Error('ChoiceProof did not return a safe replacement for this review.');
     const next = await run('Applying recommended alternative', () =>
-      gateway.resolveReview(evaluation.id, 'CHOOSE_ALTERNATIVE', 'prod_nike_runner')
+      gateway.resolveReview(evaluation.id, 'CHOOSE_ALTERNATIVE', replacementId)
     );
     setEvaluation(next);
   };
