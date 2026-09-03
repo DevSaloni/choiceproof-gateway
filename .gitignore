@@ -28,6 +28,8 @@ client/dist/
 server/dist/
 *.tsbuildinfo
 .cache/
+server/.npm-cache/
+/.npm-cache/
 
 # ==============================
 # Alternative package-manager lock files

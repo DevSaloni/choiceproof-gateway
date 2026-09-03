@@ -1,5 +1,5 @@
 import type { Product } from '../types.js';
-const p = (id:string, catalogId:string, name:string, sku:string, brand:string, price:number, delivery:number, subscription:boolean, sizes:string[], description:string, rating=4.3, warranty=6): Product => ({id,catalogId,merchant:'DemoSports',sku,name,category:'Running shoes',brand,pricePaise:price*100,shippingPaise:0,taxPaise:0,deliveryDays:delivery,subscription,rating,warrantyMonths:warranty,availableSizes:sizes,description,active:true});
+const p = (id:string, catalogId:string, name:string, sku:string, brand:string, price:number, delivery:number, subscription:boolean, sizes:string[], description:string, rating=4.3, warranty=6): Product => ({id,catalogId,merchant:'DemoSports',sku,name,category:'Running shoes',brand,pricePaise:price*100,shippingPaise:0,taxPaise:0,stockQuantity:12,deliveryDays:delivery,subscription,rating,warrantyMonths:warranty,returnWindowDays:14,availableSizes:sizes,description,active:true,productVersion:1});
 export const products: Product[] = [
  p('prod_nike_runner','nike-runner-01','Nike Runner','NIKE-RUN-01','Nike',4499,2,false,['UK 8'],'Lightweight running shoes for daily training and city runs.',4.5),
  p('prod_adidas_pro','adidas-pro-01','Adidas Pro','ADIDAS-PRO-01','Adidas',4299,3,false,['UK 8'],'Comfortable everyday performance shoes with responsive cushioning.',4.4),
