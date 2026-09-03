@@ -2,6 +2,7 @@ import { apiRequest, setAccessToken } from './http';
 import type {
   ApiAgentDecision,
   ApiCatalogResponse,
+  ApiConversationReply,
   ApiEvaluation,
   ApiIntent,
   ApiPayment,
@@ -28,11 +29,35 @@ export async function demoLogin() {
   return result;
 }
 
-export function createSession(scenarioId: ScenarioId) {
+export function createSession(scenarioId: ScenarioId | null = null) {
   return apiRequest<ApiSession>('/api/v1/sessions', {
     method: 'POST',
     body: JSON.stringify({ scenarioId }),
   });
+}
+
+export function fetchSessionView(sessionId: string) {
+  return apiRequest<ApiSession>(`/api/v1/sessions/${sessionId}/view`);
+}
+
+export function sendMessage(sessionId: string, message: string, clientMessageId: string) {
+  return apiRequest<ApiConversationReply>(`/api/v1/sessions/${sessionId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ message, clientMessageId }),
+  });
+}
+
+export function runAgent(sessionId: string) {
+  return apiRequest<{ normal: ApiAgentDecision; clean: ApiAgentDecision; evaluation: ApiEvaluation }>(
+    `/api/v1/sessions/${sessionId}/agent/run`,
+    { method: 'POST' }
+  );
+}
+
+export function fetchReplacements(evaluationId: string) {
+  return apiRequest<{ replacements: ApiEvaluation['replacements']; requiresUserConfirmation: boolean }>(
+    `/api/v1/evaluations/${evaluationId}/replacements`
+  );
 }
 
 export function parseIntent(sessionId: string, prompt: string) {
@@ -68,7 +93,7 @@ export function evaluateSession(sessionId: string) {
 
 export function resolveReview(
   evaluationId: string,
-  action: 'CHOOSE_ALTERNATIVE' | 'CONTINUE_WITH_SELECTED' | 'CANCEL',
+  action: 'CHOOSE_ALTERNATIVE' | 'CHOOSE_REPLACEMENT' | 'CONTINUE_WITH_SELECTED' | 'CANCEL',
   productId?: string
 ) {
   return apiRequest<ApiEvaluation>(`/api/v1/evaluations/${evaluationId}/review`, {
@@ -97,6 +122,13 @@ export function mockCompletePayment(providerOrderId: string) {
   return apiRequest<{ payment: ApiPayment; receipt: ApiReceipt }>('/api/v1/payments/mock-complete', {
     method: 'POST',
     body: JSON.stringify({ providerOrderId }),
+  });
+}
+
+export function verifyPayment(razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string) {
+  return apiRequest<{ payment: ApiPayment; receipt: ApiReceipt }>('/api/v1/payments/verify', {
+    method: 'POST',
+    body: JSON.stringify({ razorpayOrderId, razorpayPaymentId, razorpaySignature }),
   });
 }
 

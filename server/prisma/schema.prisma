@@ -62,16 +62,22 @@ model User {
 model ShoppingSession {
   id String @id @default(cuid())
   userId String
-  scenarioId String
+  scenarioId String?
   status SessionStatus @default(CREATED)
   aiMode String @default("fixture")
   paymentMode String @default("mock")
+  currentIntentVersion Int @default(0)
+  failureCode String?
+  stateJson Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  lastActivityAt DateTime @default(now())
   user User @relation(fields:[userId],references:[id])
   intents UserIntent[]
   offers OfferSet[]
   decisions AgentDecision[]
+  agentRuns AgentRun[]
+  chatMessages ChatMessage[]
   evaluations ChoiceProofEvaluation[]
   permits ExecutionPermit[]
   payments Payment[]
@@ -84,6 +90,7 @@ model UserIntent {
   version Int
   rawPrompt String
   rulesJson Json
+  missingFieldsJson Json?
   status IntentStatus @default(PARSED)
   intentHash String
   confirmedAt DateTime?
@@ -99,6 +106,8 @@ model Product {
   sku String
   dataJson Json
   active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   @@unique([catalogVersion,sku])
 }
 model OfferSet {
@@ -107,22 +116,77 @@ model OfferSet {
   catalogVersion String
   offerSetHash String
   offersJson Json
+  eligibleProductIdsJson Json?
+  excludedProductsJson Json?
   createdAt DateTime @default(now())
   session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
 }
 model AgentDecision {
   id String @id
   sessionId String
+  agentRunId String?
+  intentId String?
+  offerSetId String?
   mode String
   selectedProductId String
   decisionJson Json
+  provider String @default("fixture")
+  model String @default("fixture")
+  promptVersion String @default("v1")
   createdAt DateTime @default(now())
   session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  agentRun AgentRun? @relation(fields:[agentRunId],references:[id],onDelete:SetNull)
+}
+model AgentRun {
+  id String @id
+  sessionId String
+  intentId String?
+  offerSetId String?
+  provider String
+  model String
+  promptVersion String
+  status String
+  failureCode String?
+  startedAt DateTime
+  completedAt DateTime?
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  toolCalls AgentToolCall[]
+  decisions AgentDecision[]
+}
+model AgentToolCall {
+  id String @id
+  agentRunId String
+  sequence Int
+  toolName String
+  inputJson Json
+  outputJson Json
+  status String
+  createdAt DateTime @default(now())
+  agentRun AgentRun @relation(fields:[agentRunId],references:[id],onDelete:Cascade)
+  @@unique([agentRunId,sequence])
+}
+model ChatMessage {
+  id String @id
+  sessionId String
+  clientMessageId String?
+  sequence Int
+  role String
+  kind String
+  text String
+  structuredDataJson Json?
+  createdAt DateTime @default(now())
+  session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  @@unique([sessionId,sequence])
+  @@unique([sessionId,clientMessageId])
 }
 model ChoiceProofEvaluation {
   id String @id
   sessionId String
   selectedProductId String
+  intentId String?
+  offerSetId String?
+  normalDecisionId String?
+  cleanDecisionId String?
   decision EvaluationDecision
   evaluationJson Json
   createdAt DateTime @default(now())
@@ -134,13 +198,23 @@ model ExecutionPermit {
   id String @id
   sessionId String
   evaluationId String
+  intentVersion Int @default(1)
+  offerSetHash String @default("")
+  productId String @default("")
+  merchant String @default("")
+  sku String @default("")
+  quantity Int @default(1)
+  amountPaise Int @default(0)
+  currency String @default("INR")
   cartJson Json
   cartHash String
   signature String
   nonce String
   expiresAt DateTime
+  issuedAt DateTime @default(now())
   status PermitStatus @default(ISSUED)
   reservedAt DateTime?
+  reservationPaymentId String?
   usedAt DateTime?
   createdAt DateTime @default(now())
   session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
@@ -152,15 +226,17 @@ model Payment {
   sessionId String
   permitId String
   idempotencyKey String @unique
+  requestHash String @default("")
   provider String
   providerOrderId String? @unique
   providerPaymentId String? @unique
   providerSignature String?
   amountPaise Int
   currency String
-  status PaymentStatus @default(CREATING)
+  status String @default("CREATING")
   paymentSignatureVerified Boolean @default(false)
   webhookVerified Boolean @default(false)
+  failureCode String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
@@ -169,7 +245,11 @@ model Payment {
 model Receipt {
   id String @id
   sessionId String
+  evaluationId String?
+  permitId String?
+  paymentId String?
   kind String
+  status String @default("CREATED")
   receiptJson Json
   receiptHash String
   receiptSignature String
@@ -181,6 +261,8 @@ model AuditEvent {
   sessionId String
   actor String
   eventType String
+  entityType String?
+  entityId String?
   metadataJson Json?
   createdAt DateTime @default(now())
   session ShoppingSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
@@ -190,6 +272,7 @@ model WebhookEvent {
   provider String
   providerEventId String @unique
   eventType String
+  signature String
   payloadHash String
   processed Boolean @default(false)
   processedAt DateTime?

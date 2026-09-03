@@ -18,8 +18,8 @@ import { ArrowRight } from './components/Icons';
 
 const STEP_ORDER: DemoStep[] = ['intent', 'catalog', 'selection', 'decision', 'payment', 'receipt'];
 
-export function App() {
-  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard'>('landing');
+export function App({ initialPage = 'landing' }: { initialPage?: 'landing' | 'dashboard' }) {
+  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard'>(initialPage);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
   const demo = useGatewayDemo();

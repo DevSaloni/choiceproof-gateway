@@ -1,11 +1,115 @@
 openapi: 3.0.3
-info: { title: ChoiceProof Gateway API, version: 1.0.0, description: Verify the choice. Bind the payment. }
-servers: [{ url: http://localhost:3000/api/v1 }]
+info:
+  title: ChoiceProof Gateway API
+  version: 2.0.0
+  description: Buyer AI agent, deterministic ChoiceProof evaluation, safe replacement and exact-cart Razorpay payments.
+servers:
+  - url: http://localhost:3000/api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
 paths:
-  /auth/demo-login: { post: { summary: Demo login, responses: { '200': { description: JWT issued } } } }
-  /sessions: { post: { summary: Create shopping session, security: [{ bearerAuth: [] }], responses: { '201': { description: Session created } } } }
-  /sessions/{sessionId}/intent/parse: { post: { summary: Parse intent, security: [{ bearerAuth: [] }], responses: { '200': { description: Parsed intent } } } }
-  /sessions/{sessionId}/evaluate: { post: { summary: Run deterministic ChoiceProof, security: [{ bearerAuth: [] }], responses: { '200': { description: Evaluation } } } }
-  /evaluations/{evaluationId}/permit: { post: { summary: Issue exact-cart payment permit, security: [{ bearerAuth: [] }], responses: { '201': { description: Permit issued } } } }
-  /permits/{permitId}/create-order: { post: { summary: Validate cart and create payment order, security: [{ bearerAuth: [] }], responses: { '200': { description: Order created }, '409': { description: Cart blocked } } } }
-components: { securitySchemes: { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } } }
+  /auth/demo-login:
+    post:
+      summary: Authenticate the seeded demo user
+      responses:
+        '200': { description: JWT issued }
+        '401': { description: Invalid credentials }
+  /sessions:
+    post:
+      summary: Create a protected buyer session
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Session and welcome message created }
+  /sessions/{sessionId}/view:
+    get:
+      summary: Restore the complete buyer session
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: sessionId, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Complete session aggregate }
+  /sessions/{sessionId}/messages:
+    post:
+      summary: Send one idempotent guided-conversation message
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: sessionId, required: true, schema: { type: string } }
+      responses:
+        '201': { description: Buyer and assistant messages plus intent draft }
+  /sessions/{sessionId}/intent/confirm:
+    post:
+      summary: Lock the current structured intent
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: sessionId, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Confirmed versioned intent }
+        '400': { description: Required details are missing }
+  /sessions/{sessionId}/agent/run:
+    post:
+      summary: Run bounded product tools, NORMAL/CLEAN selection and deterministic evaluation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: sessionId, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Offer set, decisions, evaluation and allowed actions }
+  /evaluations/{evaluationId}/replacements:
+    get:
+      summary: Get deterministic safe replacements
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: evaluationId, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Up to three buyer-confirmed replacements }
+  /evaluations/{evaluationId}/review:
+    post:
+      summary: Choose a replacement, override a review, or cancel
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: evaluationId, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Updated evaluation }
+        '409': { description: Hard blocks cannot be overridden }
+  /evaluations/{evaluationId}/permit:
+    post:
+      summary: Issue a five-minute exact-cart permit
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: evaluationId, required: true, schema: { type: string } }
+      responses:
+        '201': { description: Signed permit }
+  /permits/{permitId}/create-order:
+    post:
+      summary: Validate final cart and create a Razorpay or mock order
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: permitId, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Provider order created }
+        '409': { description: Cart mismatch, replay or idempotency conflict }
+  /payments/verify:
+    post:
+      summary: Verify Razorpay checkout callback
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Payment and signed receipt }
+  /receipts/verify:
+    post:
+      summary: Verify receipt hash and HMAC signature
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Verification result }
